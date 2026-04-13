@@ -4,10 +4,7 @@ import { logger } from '@coclaw/observability';
 
 const env = loadEnv();
 
-const STELLAR_NETWORK_PASSPHRASE: Record<string, string> = {
-  'stellar:testnet': Networks.TESTNET,
-  'stellar:pubnet': Networks.PUBLIC
-};
+const HORIZON_TESTNET = 'https://horizon-testnet.stellar.org';
 
 let keypair: Keypair | null = null;
 let publicKey: string | null = null;
@@ -38,11 +35,7 @@ export async function getStellarStatus(): Promise<Record<string, unknown>> {
   }
 
   const kp = getKeypair()!;
-  const server = new Horizon.Server(
-    env.STELLAR_NETWORK === 'stellar:pubnet'
-      ? 'https://horizon.stellar.org'
-      : 'https://horizon-testnet.stellar.org'
-  );
+  const server = new Horizon.Server(HORIZON_TESTNET);
 
   try {
     const account = await server.loadAccount(kp.publicKey());
@@ -78,23 +71,14 @@ export async function sendStellarPayment(
   }
 
   const kp = getKeypair()!;
-  const passphrase = STELLAR_NETWORK_PASSPHRASE[env.STELLAR_NETWORK];
-  if (!passphrase) {
-    throw new Error(`unknown network: ${env.STELLAR_NETWORK}`);
-  }
-
-  const server = new Horizon.Server(
-    env.STELLAR_NETWORK === 'stellar:pubnet'
-      ? 'https://horizon.stellar.org'
-      : 'https://horizon-testnet.stellar.org'
-  );
+  const server = new Horizon.Server(HORIZON_TESTNET);
 
   const account = await server.loadAccount(kp.publicKey());
   const paymentAsset = new Asset(assetCode, assetIssuer);
 
   const tx = new TransactionBuilder(account, {
     fee: BASE_FEE,
-    networkPassphrase: passphrase
+    networkPassphrase: Networks.TESTNET
   })
     .addOperation(
       Operation.payment({

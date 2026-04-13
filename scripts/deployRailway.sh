@@ -16,13 +16,11 @@ set -euo pipefail
 # Required env vars (set before running — script will NOT use placeholders):
 #   DATABASE_URL              Postgres connection string (Neon, Supabase, etc.)
 #   REDIS_URL                 Redis connection string (Upstash, Railway Redis, etc.)
-#   CALLBACK_HMAC_SECRET      Shared HMAC secret for signed callbacks
+#   CALLBACK_HMAC_SECRET      Shared HMAC secret (generate with: openssl rand -hex 32)
 #   OPENROUTER_API_KEY        OpenRouter key for the agent LLM
 #   STELLAR_PRIVATE_KEY       Stellar secret key (S...) for the supplier wallet
 #
 # Optional env vars:
-#   STELLAR_NETWORK           default: stellar:testnet
-#   FACILITATOR_URL           default: https://www.x402.org/facilitator
 #   OPENROUTER_MODEL          default: openai/gpt-4o-mini
 #   SUPPLIER_PORT             default: 3003
 #
@@ -34,13 +32,7 @@ set -euo pipefail
 
 PROJECT_NAME="coclaw"
 
-: "${STELLAR_NETWORK:=stellar:testnet}"
-: "${STELLAR_RPC_URL:=https://soroban-testnet.stellar.org}"
-: "${STELLAR_USDC_CONTRACT:=CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA}"
-: "${FACILITATOR_URL:=https://www.x402.org/facilitator}"
 : "${OPENROUTER_MODEL:=openai/gpt-4o-mini}"
-: "${SUPPLIER_PORT:=3003}"
-: "${CALLBACK_BASE_URL:=http://coclawapi.railway.internal}"
 
 TARGET="${1:-all}"
 
@@ -97,12 +89,7 @@ deployApi() {
     "DATABASE_URL=$DATABASE_URL" \
     "REDIS_URL=$REDIS_URL" \
     "CALLBACK_HMAC_SECRET=$CALLBACK_HMAC_SECRET" \
-    "STELLAR_NETWORK=$STELLAR_NETWORK" \
-    "STELLAR_RPC_URL=$STELLAR_RPC_URL" \
-    "STELLAR_USDC_CONTRACT=$STELLAR_USDC_CONTRACT" \
-    "STELLAR_PRIVATE_KEY=$STELLAR_PRIVATE_KEY" \
-    "FACILITATOR_URL=$FACILITATOR_URL" \
-    "CALLBACK_BASE_URL=$CALLBACK_BASE_URL"
+    "STELLAR_PRIVATE_KEY=$STELLAR_PRIVATE_KEY"
   railway up --service api --ci
 }
 
@@ -118,12 +105,7 @@ deployAgent() {
     "CALLBACK_HMAC_SECRET=$CALLBACK_HMAC_SECRET" \
     "OPENROUTER_API_KEY=$OPENROUTER_API_KEY" \
     "OPENROUTER_MODEL=$OPENROUTER_MODEL" \
-    "STELLAR_NETWORK=$STELLAR_NETWORK" \
-    "STELLAR_RPC_URL=$STELLAR_RPC_URL" \
-    "STELLAR_USDC_CONTRACT=$STELLAR_USDC_CONTRACT" \
-    "STELLAR_PRIVATE_KEY=$STELLAR_PRIVATE_KEY" \
-    "FACILITATOR_URL=$FACILITATOR_URL" \
-    "SUPPLIER_PORT=$SUPPLIER_PORT"
+    "STELLAR_PRIVATE_KEY=$STELLAR_PRIVATE_KEY"
   railway up --service agent --ci
 }
 

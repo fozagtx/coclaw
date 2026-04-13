@@ -87,7 +87,6 @@ export class CoclawSdkError extends Error {
 
 export type BuyerWalletConfig = {
   stellarPrivateKey: string;
-  network: 'stellar:testnet' | 'stellar:pubnet';
   rpcUrl: string;
 };
 
@@ -149,7 +148,7 @@ export class CoclawSdk {
   }
 
   async payAndExecute(supplierEndpoint: string, body: unknown, wallet: BuyerWalletConfig): Promise<Response> {
-    const signer = createEd25519Signer(wallet.stellarPrivateKey, wallet.network);
+    const signer = createEd25519Signer(wallet.stellarPrivateKey, 'stellar:testnet');
     const rpcConfig = wallet.rpcUrl ? { url: wallet.rpcUrl } : undefined;
     const client = new x402Client().register('stellar:*', new ExactStellarScheme(signer, rpcConfig));
     const fetchWithPayment = wrapFetchWithPayment(fetch, client);
