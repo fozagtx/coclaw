@@ -5,7 +5,7 @@
     "buildCommand": "pnpm install --frozen-lockfile && pnpm turbo run build --filter=@coclaw/api..."
   },
   "deploy": {
-    "startCommand": "pnpm --filter @coclaw/api exec prisma migrate deploy && pnpm --filter @coclaw/api start",
+    "startCommand": "pnpm --filter @coclaw/api exec prisma db push --accept-data-loss && pnpm --filter @coclaw/api start",
     "healthcheckPath": "/v1/health",
     "healthcheckTimeout": 60,
     "restartPolicyType": "ON_FAILURE",
