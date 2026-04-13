@@ -1,9 +1,25 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { TopNav } from '../components/TopNav';
 
+const SKILL_HUB_URL = 'https://clawhub.ai/fozagtx/coclaw';
+const INSTALL_COMMAND = 'Install "coclaw" from ClawHub';
+
 export default function LandingPage() {
+  const [copied, setCopied] = useState<string | null>(null);
+
+  async function copyText(id: string, value: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(id);
+      setTimeout(() => setCopied((current) => (current === id ? null : current)), 1200);
+    } catch {
+      setCopied(null);
+    }
+  }
+
   return (
     <>
       <TopNav />
@@ -21,14 +37,6 @@ export default function LandingPage() {
               <Link href="/marketplace" className="btn btn-primary">
                 Browse Services
               </Link>
-              <a
-                href="https://clawhub.ai/fozagtx/coclaw"
-                target="_blank"
-                rel="noreferrer"
-                className="btn btn-secondary"
-              >
-                Install the OpenClaw Skill
-              </a>
             </div>
           </div>
         </section>
@@ -48,17 +56,17 @@ export default function LandingPage() {
               <p className="card-label">For AI Suppliers</p>
               <h2 className="card-title">Monetize your model behind a single endpoint</h2>
               <p className="landing-feature-desc">
-                List your AI service on Coclaw. Set a price in USDC. When an agent pays,
-                your supplier receives the task, runs inference, and returns the result.
+                List your AI service on Coclaw with a price in USDC. When a buyer agent pays and calls your endpoint,
+                you run inference and return the result in the same response.
               </p>
             </article>
 
             <article className="card">
               <p className="card-label">For the Ecosystem</p>
-              <h2 className="card-title">Every transaction is verifiable on-chain</h2>
+              <h2 className="card-title">Payments settle on Stellar via x402</h2>
               <p className="landing-feature-desc">
-                Payment and settlement happen on Stellar via the x402 protocol.
-                Tx hash, ledger number. No trust required, just proof.
+                Every payment is an on-chain Soroban auth entry settled by the x402 facilitator.
+                No API keys, no accounts, no trust required.
               </p>
             </article>
           </div>
@@ -76,12 +84,12 @@ export default function LandingPage() {
             <div className="landing-flow-step">
               <span className="landing-flow-num">2</span>
               <h3>Pay Directly via x402</h3>
-              <p>Your agent calls the supplier endpoint. x402 middleware intercepts the request, the buyer signs a Soroban auth entry, and the facilitator settles USDC on-chain.</p>
+              <p>Your agent calls the supplier endpoint with x402. The buyer signs a Soroban auth entry, the facilitator settles USDC on-chain, and the request passes through.</p>
             </div>
             <div className="landing-flow-step">
               <span className="landing-flow-num">3</span>
               <h3>Get the Result</h3>
-              <p>The supplier executes the task and returns the output. Payment proof lives on Stellar, verifiable by anyone.</p>
+              <p>The supplier runs inference and returns the result in the same response. Payment settled on-chain, result in hand.</p>
             </div>
           </div>
         </section>
@@ -109,23 +117,36 @@ export default function LandingPage() {
 
         <section className="landing-cta">
           <div className="landing-cta-box">
-            <p className="eyebrow">Ready to Build</p>
+            <p className="eyebrow">Install the OpenClaw Skill</p>
             <h2>Give your agent a wallet and a directory.<br />It handles the rest.</h2>
             <p className="hero-text" style={{maxWidth:'56ch',margin:'0.5rem auto 0'}}>
               Install the Coclaw skill on your OpenClaw agent and it can autonomously
               discover, purchase, and consume AI services, all settled in USDC on Stellar.
             </p>
-            <div className="hero-actions" style={{marginTop:'1.25rem'}}>
+            <div className="command-box" style={{marginTop:'1.25rem',marginBottom:'1rem'}}>
+              <p className="command-title">Run this command in OpenClaw</p>
+              <p className="command-text">{INSTALL_COMMAND}</p>
+              <button type="button" className="btn btn-primary btn-sm" onClick={() => void copyText('install', INSTALL_COMMAND)}>
+                {copied === 'install' ? 'Copied!' : 'Copy Command'}
+              </button>
+            </div>
+            <p className="hero-text" style={{maxWidth:'56ch',margin:'0.5rem auto 0'}}>
+              Skill URL:{' '}
+              <a href={SKILL_HUB_URL} target="_blank" rel="noreferrer" style={{wordBreak:'break-all'}}>
+                {SKILL_HUB_URL}
+              </a>
+            </p>
+            <div className="hero-actions">
               <Link href="/marketplace" className="btn btn-primary">
                 Browse Services
               </Link>
               <a
-                href="https://clawhub.ai/fozagtx/coclaw"
+                href={SKILL_HUB_URL}
                 target="_blank"
                 rel="noreferrer"
                 className="btn btn-secondary"
               >
-                Install the OpenClaw Skill
+                View on ClawHub
               </a>
             </div>
           </div>

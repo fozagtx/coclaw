@@ -4,7 +4,6 @@ import { HTTPFacilitatorClient } from '@x402/core/server';
 import { ExactStellarScheme } from '@x402/stellar/exact/server';
 import { loadEnv } from '@coclaw/config';
 import { logger } from '@coclaw/observability';
-import { buildSignedCallback } from '@coclaw/sdk-supplier';
 import { buildSystemPrompt } from './serviceInstructions.js';
 import { getStellarPublicKey, getStellarStatus, isStellarConfigured } from './stellarWallet.js';
 
@@ -21,10 +20,8 @@ if (!supplierPublicKey) {
 }
 
 type TaskRequest = {
-  order_id: string;
   service_id: string;
   input: Record<string, unknown>;
-  callback_url: string;
 };
 
 type ChatMessage = {
@@ -59,63 +56,6 @@ async function callOpenRouter(messages: ChatMessage[]): Promise<string> {
   };
 
   return data.choices[0]?.message?.content ?? '';
-}
-
-async function executeTask(task: TaskRequest, res: express.Response): Promise<void> {
-  const inputStr = JSON.stringify(task.input, null, 2);
-  const systemPrompt = buildSystemPrompt(task.service_id);
-
-  if (!systemPrompt) {
-    const callback = buildSignedCallback(
-      { order_id: task.order_id, status: 'FAILED', output: null, error: `unknown service_id: ${task.service_id}` },
-      env.CALLBACK_HMAC_SECRET
-    );
-    await fetch(task.callback_url, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', ...callback.headers },
-      body: JSON.stringify(callback.payload)
-    });
-    logger.warn({ order_id: task.order_id, service_id: task.service_id }, 'rejected unknown service_id');
-    return;
-  }
-
-  const messages: ChatMessage[] = [
-    { role: 'system', content: systemPrompt },
-    { role: 'user', content: `Order: ${task.order_id}\nInput:\n${inputStr}` }
-  ];
-
-  try {
-    const llmOutput = await callOpenRouter(messages);
-    let parsed: Record<string, unknown>;
-    try { parsed = JSON.parse(llmOutput); } catch { parsed = { result: llmOutput }; }
-
-    const callback = buildSignedCallback(
-      { order_id: task.order_id, status: 'COMPLETED', output: parsed, error: null },
-      env.CALLBACK_HMAC_SECRET
-    );
-    await fetch(task.callback_url, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', ...callback.headers },
-      body: JSON.stringify(callback.payload)
-    });
-    logger.info({ order_id: task.order_id }, 'task completed and callback sent');
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const callback = buildSignedCallback(
-      { order_id: task.order_id, status: 'FAILED', output: null, error: errorMessage },
-      env.CALLBACK_HMAC_SECRET
-    );
-    try {
-      await fetch(task.callback_url, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', ...callback.headers },
-        body: JSON.stringify(callback.payload)
-      });
-    } catch (callbackError) {
-      logger.error({ err: callbackError, order_id: task.order_id }, 'callback delivery failed');
-    }
-    logger.error({ err: error, order_id: task.order_id }, 'task execution failed');
-  }
 }
 
 const app = express();
@@ -164,9 +104,32 @@ app.use(
 
 app.post('/task', async (req, res) => {
   const body = req.body as TaskRequest;
-  logger.info({ order_id: body.order_id, service_id: body.service_id }, 'task received (payment settled), executing async');
-  void executeTask(body, res);
-  res.status(202).json({ accepted: true, order_id: body.order_id });
+  logger.info({ service_id: body.service_id }, 'task received (payment settled), executing');
+
+  const systemPrompt = buildSystemPrompt(body.service_id);
+  if (!systemPrompt) {
+    logger.warn({ service_id: body.service_id }, 'rejected unknown service_id');
+    return res.status(400).json({ status: 'FAILED', error: `unknown service_id: ${body.service_id}` });
+  }
+
+  const inputStr = JSON.stringify(body.input, null, 2);
+  const messages: ChatMessage[] = [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: `Input:\n${inputStr}` }
+  ];
+
+  try {
+    const llmOutput = await callOpenRouter(messages);
+    let parsed: Record<string, unknown>;
+    try { parsed = JSON.parse(llmOutput); } catch { parsed = { result: llmOutput }; }
+
+    logger.info({ service_id: body.service_id }, 'task completed');
+    res.json({ status: 'COMPLETED', output: parsed });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error({ err: error, service_id: body.service_id }, 'task execution failed');
+    res.status(500).json({ status: 'FAILED', error: errorMessage });
+  }
 });
 
 app.listen(port, '0.0.0.0', () => {
