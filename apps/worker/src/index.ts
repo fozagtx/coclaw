@@ -8,10 +8,23 @@ const env = loadEnv();
 let apiBase = env.API_BASE_URL;
 const callbackBase = env.CALLBACK_BASE_URL;
 
-const redis = new Redis(env.REDIS_URL, { maxRetriesPerRequest: null });
-const dispatchQueue = new Queue<{ orderId: string }>('dispatch', { connection: redis });
-
+let redis: InstanceType<typeof Redis> | null = null;
+let dispatchQueue: Queue<{ orderId: string }> | null = null;
 const enqueuedOrderIds = new Set<string>();
+
+function getRedis(): InstanceType<typeof Redis> {
+  if (!redis) {
+    redis = new Redis(env.REDIS_URL, { maxRetriesPerRequest: null, lazyConnect: true, retryStrategy: () => null });
+  }
+  return redis;
+}
+
+function getQueue(): Queue<{ orderId: string }> {
+  if (!dispatchQueue) {
+    dispatchQueue = new Queue<{ orderId: string }>('dispatch', { connection: getRedis() });
+  }
+  return dispatchQueue;
+}
 
 async function apiGet<T>(path: string): Promise<T> {
   const response = await fetch(`${apiBase}${path}`);
@@ -47,7 +60,7 @@ async function enqueuePaidOrders(): Promise<void> {
       continue;
     }
 
-    await dispatchQueue.add(
+    await getQueue().add(
       'dispatch-order',
       { orderId: order.order_id },
       {
@@ -105,7 +118,7 @@ function startDispatchWorker(): Worker<{ orderId: string }> {
       }
     },
     {
-      connection: redis,
+      connection: getRedis(),
       concurrency: 5
     }
   );
@@ -118,6 +131,13 @@ export type StartWorkerOptions = {
 export async function startWorker(options: StartWorkerOptions = {}): Promise<void> {
   if (options.apiBase) {
     apiBase = options.apiBase;
+  }
+
+  try {
+    await getRedis().connect();
+  } catch {
+    logger.warn('redis not available, dispatch queue disabled');
+    return;
   }
 
   const dispatchWorker = startDispatchWorker();
@@ -136,7 +156,7 @@ export async function startWorker(options: StartWorkerOptions = {}): Promise<voi
       network: env.STELLAR_NETWORK,
       facilitator_url: env.FACILITATOR_URL
     },
-    'worker started (x402 stellar, no chain polling)'
+    'worker started (x402 stellar)'
   );
 }
 
