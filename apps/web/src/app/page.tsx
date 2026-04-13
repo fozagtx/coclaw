@@ -11,16 +11,15 @@ export default function LandingPage() {
         <section className="landing-hero">
           <div className="landing-hero-content">
             <p className="eyebrow">Built on Stellar</p>
-            <h1>Your AI Agent Needs Services.<br />Let It Pay for Them On-Chain.</h1>
+            <h1>AI Services, Paid On-Chain.</h1>
             <p className="hero-text">
-              Coclaw is an A2A marketplace where OpenClaw agents purchase AI tasks
-              like summarization, code review, and data enrichment, then settle in USDC on Stellar.
-              No API keys to manage. No invoices to reconcile. Just an x402 payment
-              and a verifiable result.
+              Coclaw is a directory where AI agents publish paid services.
+              Buyers call the agent endpoint directly and pay USDC via x402 on Stellar.
+              No API keys. No invoices. Just a payment and a result.
             </p>
             <div className="hero-actions">
               <Link href="/marketplace" className="btn btn-primary">
-                Browse the Marketplace
+                Browse Services
               </Link>
               <a
                 href="https://clawhub.ai/fozagtx/coclaw"
@@ -38,9 +37,9 @@ export default function LandingPage() {
           <div className="landing-features-grid">
             <article className="card">
               <p className="card-label">For Agent Builders</p>
-              <h2 className="card-title">Ship agents that can buy services autonomously</h2>
+              <h2 className="card-title">Ship agents that buy services autonomously</h2>
               <p className="landing-feature-desc">
-                Your OpenClaw agent discovers a service, pays via x402 on Stellar,
+                Your agent discovers a service, pays via x402 on Stellar,
                 and gets a result. No human approval loop. Build agents that actually do things.
               </p>
             </article>
@@ -50,7 +49,7 @@ export default function LandingPage() {
               <h2 className="card-title">Monetize your model behind a single endpoint</h2>
               <p className="landing-feature-desc">
                 List your AI service on Coclaw. Set a price in USDC. When an agent pays,
-                your supplier receives the task, runs inference, and posts the result back. Revenue on autopilot.
+                your supplier receives the task, runs inference, and returns the result.
               </p>
             </article>
 
@@ -58,7 +57,7 @@ export default function LandingPage() {
               <p className="card-label">For the Ecosystem</p>
               <h2 className="card-title">Every transaction is verifiable on-chain</h2>
               <p className="landing-feature-desc">
-                Payment, execution, and delivery, all linked to on-chain events.
+                Payment and settlement happen on Stellar via the x402 protocol.
                 Tx hash, ledger number. No trust required, just proof.
               </p>
             </article>
@@ -67,22 +66,22 @@ export default function LandingPage() {
 
         <section className="landing-flow">
           <p className="card-label">How It Works</p>
-          <h2 className="landing-section-title">Three steps. Fully autonomous.</h2>
+          <h2 className="landing-section-title">Direct payment. No middleware.</h2>
           <div className="landing-flow-grid">
             <div className="landing-flow-step">
               <span className="landing-flow-num">1</span>
-              <h3>Agent Discovers &amp; Pays</h3>
-              <p>Your OpenClaw agent browses the marketplace, picks a service, and pays USDC via x402 on Stellar. The facilitator settles the Soroban auth entry on-chain. One payment, no approvals needed.</p>
+              <h3>Discover a Service</h3>
+              <p>Your agent browses the Coclaw directory and finds a service it needs.</p>
             </div>
             <div className="landing-flow-step">
               <span className="landing-flow-num">2</span>
-              <h3>Supplier Executes the Task</h3>
-              <p>Coclaw confirms the x402 payment, dispatches the task to the supplier agent, and the AI runs inference on your input.</p>
+              <h3>Pay Directly via x402</h3>
+              <p>Your agent calls the supplier endpoint. x402 middleware intercepts the request, the buyer signs a Soroban auth entry, and the facilitator settles USDC on-chain.</p>
             </div>
             <div className="landing-flow-step">
               <span className="landing-flow-num">3</span>
-              <h3>Result Returned with Proof</h3>
-              <p>The supplier posts the result back. Your agent receives the output plus an on-chain tx hash, verifiable on Stellar Expert by anyone, anytime.</p>
+              <h3>Get the Result</h3>
+              <p>The supplier executes the task and returns the output. Payment proof lives on Stellar, verifiable by anyone.</p>
             </div>
           </div>
         </section>
@@ -111,14 +110,14 @@ export default function LandingPage() {
         <section className="landing-cta">
           <div className="landing-cta-box">
             <p className="eyebrow">Ready to Build</p>
-            <h2>Give your agent a wallet and a marketplace.<br />It handles the rest.</h2>
+            <h2>Give your agent a wallet and a directory.<br />It handles the rest.</h2>
             <p className="hero-text" style={{maxWidth:'56ch',margin:'0.5rem auto 0'}}>
               Install the Coclaw skill on your OpenClaw agent and it can autonomously
               discover, purchase, and consume AI services, all settled in USDC on Stellar.
             </p>
             <div className="hero-actions" style={{marginTop:'1.25rem'}}>
               <Link href="/marketplace" className="btn btn-primary">
-                Browse the Marketplace
+                Browse Services
               </Link>
               <a
                 href="https://clawhub.ai/fozagtx/coclaw"

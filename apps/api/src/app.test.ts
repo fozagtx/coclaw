@@ -13,7 +13,6 @@ const testEnv = loadEnv({
 });
 
 const STELLAR_WALLET_A = 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-const STELLAR_WALLET_B = 'GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
 
 const servicePayload = {
   service_id: 'svc_demo_v1',
@@ -39,174 +38,54 @@ describe('api app', () => {
     await app.close();
   });
 
-  it('registers service and creates order', async () => {
-    const serviceRes = await app.inject({
+  it('returns health', async () => {
+    const res = await app.inject({ method: 'GET', url: '/v1/health' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().ok).toBe(true);
+  });
+
+  it('registers and lists services', async () => {
+    const createRes = await app.inject({
       method: 'POST',
       url: '/v1/services',
       payload: servicePayload
     });
+    expect(createRes.statusCode).toBe(201);
+    expect(createRes.json().service_id).toBe('svc_demo_v1');
 
-    expect(serviceRes.statusCode).toBe(201);
-
-    const orderRes = await app.inject({
-      method: 'POST',
-      url: '/v1/orders',
-      payload: {
-        service_id: servicePayload.service_id,
-        buyer_wallet: STELLAR_WALLET_B,
-        input_payload: { query: 'hello' }
-      }
-    });
-
-    expect(orderRes.statusCode).toBe(201);
-    const order = orderRes.json();
-    expect(order.status).toBe('CREATED');
-    expect(order.network).toBe('stellar:testnet');
+    const listRes = await app.inject({ method: 'GET', url: '/v1/services' });
+    expect(listRes.statusCode).toBe(200);
+    expect(listRes.json().length).toBeGreaterThan(0);
   });
 
-  it('records payment event idempotently and supports order lookup by hex', async () => {
+  it('returns 404 for unknown service', async () => {
+    const res = await app.inject({ method: 'GET', url: '/v1/services/nope' });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('lists openclaw listings', async () => {
     await app.inject({
       method: 'POST',
       url: '/v1/services',
       payload: servicePayload
     });
 
-    const orderRes = await app.inject({
-      method: 'POST',
-      url: '/v1/orders',
-      payload: {
-        service_id: servicePayload.service_id,
-        buyer_wallet: STELLAR_WALLET_B,
-        input_payload: { query: 'pay' }
-      }
-    });
-    const created = orderRes.json();
-
-    const byHexRes = await app.inject({
-      method: 'GET',
-      url: `/v1/orders/by-hex/${created.order_id_hex}`
-    });
-    expect(byHexRes.statusCode).toBe(200);
-    expect(byHexRes.json().order_id).toBe(created.order_id);
-
-    const firstPaymentRes = await app.inject({
-      method: 'POST',
-      url: `/v1/internal/orders/${created.order_id}/payment-event`,
-      headers: {
-        'x-internal-secret': 'dev-secret'
-      },
-      payload: {
-        order_id_hex: created.order_id_hex,
-        tx_hash: 'abc123def456abc123def456abc123def456abc123def456abc123def456abcd',
-        ledger: 12345,
-        raw_event: {
-          source: 'test'
-        }
-      }
-    });
-    expect(firstPaymentRes.statusCode).toBe(200);
-    const firstApplied = firstPaymentRes.json();
-    expect(firstApplied.transitioned_to_paid).toBe(true);
-    expect(firstApplied.duplicate_event).toBe(false);
-    expect(firstApplied.order.status).toBe('PAID');
-
-    const duplicatePaymentRes = await app.inject({
-      method: 'POST',
-      url: `/v1/internal/orders/${created.order_id}/payment-event`,
-      headers: {
-        'x-internal-secret': 'dev-secret'
-      },
-      payload: {
-        order_id_hex: created.order_id_hex,
-        tx_hash: 'abc123def456abc123def456abc123def456abc123def456abc123def456abcd',
-        ledger: 12345,
-        raw_event: {
-          source: 'test'
-        }
-      }
-    });
-    expect(duplicatePaymentRes.statusCode).toBe(200);
-    const duplicateApplied = duplicatePaymentRes.json();
-    expect(duplicateApplied.transitioned_to_paid).toBe(false);
-    expect(duplicateApplied.duplicate_event).toBe(true);
-    expect(duplicateApplied.order.status).toBe('PAID');
+    const res = await app.inject({ method: 'GET', url: '/v1/openclaw/listings' });
+    expect(res.statusCode).toBe(200);
+    const listings = res.json() as Array<{ listing_id: string }>;
+    expect(listings.length).toBeGreaterThan(0);
+    expect(listings[0]?.listing_id).toBe(servicePayload.service_id);
   });
 
-  it('supports openclaw listings and purchase endpoints', async () => {
-    const listingRes = await app.inject({
+  it('returns single openclaw listing', async () => {
+    await app.inject({
       method: 'POST',
       url: '/v1/services',
       payload: servicePayload
     });
-    expect(listingRes.statusCode).toBe(201);
 
-    const listRes = await app.inject({
-      method: 'GET',
-      url: '/v1/openclaw/listings'
-    });
-    expect(listRes.statusCode).toBe(200);
-    const listings = listRes.json() as Array<{ listing_id: string }>;
-    expect(listings.length).toBeGreaterThan(0);
-    expect(listings[0]?.listing_id).toBe(servicePayload.service_id);
-
-    const createPurchaseRes = await app.inject({
-      method: 'POST',
-      url: '/v1/openclaw/purchases',
-      payload: {
-        listing_id: servicePayload.service_id,
-        buyer_wallet: STELLAR_WALLET_B,
-        input_payload: { query: 'buy' }
-      }
-    });
-    expect(createPurchaseRes.statusCode).toBe(201);
-    const purchase = createPurchaseRes.json() as {
-      purchase_id: string;
-      purchase_id_hex: string;
-      listing_id: string;
-      amount_atomic: string;
-      token_address: string;
-      network: string;
-    };
-    expect(purchase.listing_id).toBe(servicePayload.service_id);
-    expect(purchase.network).toBe('stellar:testnet');
-
-    const prepareRes = await app.inject({
-      method: 'POST',
-      url: `/v1/openclaw/purchases/${purchase.purchase_id}/prepare-payment`
-    });
-    expect(prepareRes.statusCode).toBe(200);
-    const payment = prepareRes.json() as {
-      purchase_id: string;
-      purchase_id_hex: string;
-      listing_id: string;
-      amount_atomic: string;
-      token_address: string;
-      network: string;
-      pay_to: string;
-      price: string;
-      facilitator_url: string;
-    };
-    expect(payment.purchase_id).toBe(purchase.purchase_id);
-    expect(payment.purchase_id_hex).toBe(purchase.purchase_id_hex);
-    expect(payment.listing_id).toBe(purchase.listing_id);
-    expect(payment.amount_atomic).toBe(purchase.amount_atomic);
-    expect(payment.token_address).toBe(purchase.token_address);
-    expect(payment.network).toBe('stellar:testnet');
-    expect(payment.pay_to).toBe('GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
-    expect(payment.facilitator_url).toBe('https://www.x402.org/facilitator');
-
-    const getPurchaseRes = await app.inject({
-      method: 'GET',
-      url: `/v1/openclaw/purchases/${purchase.purchase_id}`
-    });
-    expect(getPurchaseRes.statusCode).toBe(200);
-    expect(getPurchaseRes.json().purchase_id).toBe(purchase.purchase_id);
-
-    const getByHexRes = await app.inject({
-      method: 'GET',
-      url: `/v1/openclaw/purchases/by-hex/${purchase.purchase_id_hex}`
-    });
-    expect(getByHexRes.statusCode).toBe(200);
-    expect(getByHexRes.json().purchase_id).toBe(purchase.purchase_id);
+    const res = await app.inject({ method: 'GET', url: `/v1/openclaw/listings/${servicePayload.service_id}` });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().listing_id).toBe(servicePayload.service_id);
   });
 });

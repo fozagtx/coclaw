@@ -15,19 +15,3 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 export const logger = pino(loggerOptions);
-
-export type MetricSample = {
-  name: string;
-  value: number;
-  labels?: Record<string, string | number>;
-};
-
-const metricsBuffer: MetricSample[] = [];
-
-export function recordMetric(sample: MetricSample): void {
-  metricsBuffer.push(sample);
-}
-
-export function flushMetrics(): MetricSample[] {
-  return metricsBuffer.splice(0, metricsBuffer.length);
-}

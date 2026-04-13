@@ -1,9 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 import { idToHex, priceToAtomic } from '@coclaw/shared-types';
+import { loadEnv } from '@coclaw/config';
 
 const prisma = new PrismaClient();
+const env = loadEnv();
 
-const SUPPLIER_WALLET = 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+const SUPPLIER_WALLET = env.SUPPLIER_WALLET ?? 'GAXIVISOBDOMLXN6MPCTHKHSPC5W2JOUPE227ML4H7ZRTHY47YICIRDD';
+const AGENT_ENDPOINT = `${env.AGENT_PUBLIC_URL}/task`;
 const TOKEN_DECIMALS = 7;
 
 const listings = [
@@ -12,7 +15,6 @@ const listings = [
     name: 'AI Document Summarizer',
     description: 'Summarizes long documents into concise bullet points using LLM inference.',
     priceUsdt: '0.5',
-    endpoint: 'http://coclawagent.railway.internal/task',
     inputSchema: { type: 'object', properties: { text: { type: 'string' }, max_points: { type: 'number' } } },
     outputSchema: { type: 'object', properties: { summary: { type: 'string' }, bullet_points: { type: 'array', items: { type: 'string' } } } }
   },
@@ -21,7 +23,6 @@ const listings = [
     name: 'Code Review Agent',
     description: 'Reviews source code for bugs, security issues, and style violations.',
     priceUsdt: '1.0',
-    endpoint: 'http://coclawagent.railway.internal/task',
     inputSchema: { type: 'object', properties: { code: { type: 'string' }, language: { type: 'string' } } },
     outputSchema: { type: 'object', properties: { issues: { type: 'array' } }, score: { type: 'number' } }
   },
@@ -30,7 +31,6 @@ const listings = [
     name: 'Data Enrichment Service',
     description: 'Takes raw data records and enriches them with AI-generated context and classification.',
     priceUsdt: '0.75',
-    endpoint: 'http://coclawagent.railway.internal/task',
     inputSchema: { type: 'object', properties: { records: { type: 'array' }, context: { type: 'string' } } },
     outputSchema: { type: 'object', properties: { enriched: { type: 'array' }, categories: { type: 'array' } } }
   }
@@ -56,7 +56,7 @@ async function seed(): Promise<void> {
         priceUsdt: listing.priceUsdt,
         priceAtomic,
         tokenDecimals: TOKEN_DECIMALS,
-        endpoint: listing.endpoint,
+        endpoint: AGENT_ENDPOINT,
         supplierWallet: SUPPLIER_WALLET,
         version: '1.0.0',
         isActive: true
@@ -68,13 +68,13 @@ async function seed(): Promise<void> {
         outputSchema: listing.outputSchema,
         priceUsdt: listing.priceUsdt,
         priceAtomic,
-        endpoint: listing.endpoint,
+        endpoint: AGENT_ENDPOINT,
         supplierWallet: SUPPLIER_WALLET,
         isActive: true
       }
     });
 
-    console.log(`Seeded: ${listing.serviceId} (${listing.name})`);
+    console.log(`Seeded: ${listing.serviceId} (${listing.name}) -> ${AGENT_ENDPOINT}`);
   }
 
   console.log(`\nDone. ${listings.length} listings seeded.`);

@@ -1,18 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assertValidTransition, canTransition, idToHex, priceToAtomic } from './index.js';
-
-describe('state machine', () => {
-  it('allows valid transitions', () => {
-    expect(canTransition('CREATED', 'PAID')).toBe(true);
-    expect(canTransition('PAID', 'RUNNING')).toBe(true);
-    expect(canTransition('RUNNING', 'COMPLETED')).toBe(true);
-  });
-
-  it('rejects invalid transitions', () => {
-    expect(canTransition('CREATED', 'RUNNING')).toBe(false);
-    expect(() => assertValidTransition('COMPLETED', 'PAID')).toThrow();
-  });
-});
+import { idToHex, priceToAtomic } from './index.js';
 
 describe('id mapping', () => {
   it('maps same id to same hash', () => {

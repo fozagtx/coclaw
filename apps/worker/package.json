@@ -22,10 +22,7 @@
   },
   "dependencies": {
     "@coclaw/config": "workspace:*",
-    "@coclaw/observability": "workspace:*",
-    "@coclaw/shared-types": "workspace:*",
-    "bullmq": "^5.58.5",
-    "ioredis": "^5.7.0"
+    "@coclaw/observability": "workspace:*"
   },
   "devDependencies": {
     "tsx": "^4.20.5",

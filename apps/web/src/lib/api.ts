@@ -1,4 +1,4 @@
-import type { Listing, Order, PaymentPreparation, Purchase } from './types';
+import type { Listing } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'https://coclawapi-production.up.railway.app';
 
@@ -51,35 +51,4 @@ export function getApiBaseUrl(): string {
 export async function listListings(): Promise<Listing[]> {
   const listings = await requestJson<Listing[]>('/v1/openclaw/listings');
   return listings.filter((listing) => listing.is_active);
-}
-
-export async function listOrders(status?: string): Promise<Order[]> {
-  const suffix = status ? `?status=${encodeURIComponent(status)}` : '';
-  return requestJson<Order[]>(`/v1/orders${suffix}`);
-}
-
-export async function getOrder(orderId: string): Promise<Order> {
-  return requestJson<Order>(`/v1/orders/${encodeURIComponent(orderId)}`);
-}
-
-export async function createPurchase(input: {
-  listing_id: string;
-  buyer_wallet: string;
-  input_payload: Record<string, unknown>;
-}): Promise<Purchase> {
-  return requestJson<Purchase>('/v1/openclaw/purchases', {
-    method: 'POST',
-    body: JSON.stringify(input)
-  });
-}
-
-export async function preparePayment(purchaseId: string): Promise<PaymentPreparation> {
-  return requestJson<PaymentPreparation>(`/v1/openclaw/purchases/${encodeURIComponent(purchaseId)}/prepare-payment`, {
-    method: 'POST',
-    body: JSON.stringify({})
-  });
-}
-
-export async function getPurchase(purchaseId: string): Promise<Purchase> {
-  return requestJson<Purchase>(`/v1/openclaw/purchases/${encodeURIComponent(purchaseId)}`);
 }

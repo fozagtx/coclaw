@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from urllib import error, request
 
 API_BASE_URL = "https://coclawapi-production.up.railway.app"
-DEFAULT_SUPPLIER_WALLET = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+DEFAULT_SUPPLIER_WALLET = "GAXIVISOBDOMLXN6MPCTHKHSPC5W2JOUPE227ML4H7ZRTHY47YICIRDD"
 SAFE_SUPPLIER_ENDPOINT = "https://coclawagent-production.up.railway.app/task"
 
 DEFAULT_INPUT_SCHEMA = {

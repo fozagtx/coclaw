@@ -7,9 +7,7 @@
   "references": [
     { "path": "../../packages/shared-types" },
     { "path": "../../packages/config" },
-    { "path": "../../packages/observability" },
-    { "path": "../../packages/payments" },
-    { "path": "../worker" }
+    { "path": "../../packages/observability" }
   ],
   "include": ["src"]
 }
