@@ -1,0 +1,43 @@
+FROM node:22-slim AS base
+RUN npm i -g corepack@latest && corepack enable
+WORKDIR /app
+
+FROM base AS deps
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY apps/api/package.json apps/api/
+COPY apps/agent/package.json apps/agent/
+COPY apps/web/package.json apps/web/
+COPY apps/worker/package.json apps/worker/
+COPY packages/config/package.json packages/config/
+COPY packages/observability/package.json packages/observability/
+COPY packages/payments/package.json packages/payments/
+COPY packages/shared-types/package.json packages/shared-types/
+COPY packages/sdk/package.json packages/sdk/
+COPY packages/sdk-consumer/package.json packages/sdk-consumer/
+COPY packages/sdk-supplier/package.json packages/sdk-supplier/
+RUN corepack prepare --activate && pnpm install --frozen-lockfile
+
+FROM deps AS build
+COPY . .
+RUN pnpm turbo run compile --filter=@coclaw/agent...
+RUN pnpm --filter @coclaw/agent exec tsc -p tsconfig.json
+
+FROM base AS runner
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/agent/node_modules ./apps/agent/node_modules
+COPY --from=build /app/apps/agent/dist ./apps/agent/dist
+COPY --from=build /app/apps/agent/package.json ./apps/agent/
+COPY --from=build /app/packages/config/dist ./packages/config/dist
+COPY --from=build /app/packages/config/package.json ./packages/config/
+COPY --from=build /app/packages/observability/dist ./packages/observability/dist
+COPY --from=build /app/packages/observability/package.json ./packages/observability/
+COPY --from=build /app/packages/sdk-supplier/dist ./packages/sdk-supplier/dist
+COPY --from=build /app/packages/sdk-supplier/package.json ./packages/sdk-supplier/
+COPY --from=build /app/packages/shared-types/dist ./packages/shared-types/dist
+COPY --from=build /app/packages/shared-types/package.json ./packages/shared-types/
+COPY --from=build /app/package.json ./
+COPY --from=build /app/pnpm-workspace.yaml ./
+
+WORKDIR /app/apps/agent
+EXPOSE 3000
+CMD ["node", "dist/server.js"]
