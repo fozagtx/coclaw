@@ -1,0 +1,31 @@
+{
+  "name": "@coclaw/agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/server.js",
+  "types": "dist/server.d.ts",
+  "scripts": {
+    "compile": "tsc -p tsconfig.json",
+    "build": "cd ../.. && turbo run compile --filter=@coclaw/agent^... && cd apps/agent && tsc -p tsconfig.json",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@coclaw/config": "workspace:*",
+    "@coclaw/observability": "workspace:*",
+    "@coclaw/sdk-supplier": "workspace:*",
+    "@coclaw/shared-types": "workspace:*",
+    "@stellar/stellar-sdk": "^13.3.0",
+    "@x402/core": "^2.9.0",
+    "@x402/express": "^2.9.0",
+    "@x402/stellar": "^2.9.0",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "tsx": "^4.20.5"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "@coclaw/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@coclaw/shared-types": "workspace:*",
+    "@x402/fetch": "^2.9.0",
+    "@x402/stellar": "^2.9.0"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.4"
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Coclaw"
+  short_description: "Auto execute Coclaw sell and buy flows on Stellar"
+  default_prompt: "Use this skill to auto-create Coclaw listings (sell side) and purchases/orders (buy side), then prepare x402 Stellar payment params and track status."
