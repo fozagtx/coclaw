@@ -27,7 +27,7 @@ export type Order = {
   amount_atomic: string;
   token_decimals: number;
   token_address: string;
-  chain_id: number;
+  network: string;
   status: OrderState;
   tx_hash: string | null;
   error_message: string | null;
@@ -48,7 +48,7 @@ export type Purchase = {
   amount_atomic: string;
   token_decimals: number;
   token_address: string;
-  chain_id: number;
+  network: string;
   status: OrderState;
   tx_hash: string | null;
   error_message: string | null;
@@ -62,11 +62,13 @@ export type PaymentPreparation = {
   purchase_id_hex: string;
   listing_id: string;
   listing_id_hex: string;
-  chain_id: number;
+  network: string;
   token_address: string;
-  payment_router_address: string;
+  pay_to: string;
   amount_atomic: string;
   supplier_wallet: string;
+  price: string;
+  facilitator_url: string;
 };
 
 export type OrderCounts = {

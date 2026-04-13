@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 
 type NavItem = {
@@ -48,8 +47,7 @@ export function TopNav() {
           ))}
         </nav>
         <div className="network-pill">
-          <Image src="/kite.png" alt="Kite Chain" width={32} height={32} />
-          <span>Kite Chain</span>
+          <span>Stellar</span>
         </div>
       </div>
     </header>

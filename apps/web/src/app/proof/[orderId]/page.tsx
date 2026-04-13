@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StatusBadge } from '../../../components/StatusBadge';
 import { TopNav } from '../../../components/TopNav';
 import { getOrder, preparePayment } from '../../../lib/api';
@@ -16,14 +16,6 @@ export default function ProofPage() {
   const [paymentPreparation, setPaymentPreparation] = useState<PaymentPreparation | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const kiteScanTxUrl = useMemo(() => {
-    if (!order?.tx_hash) {
-      return null;
-    }
-    const explorer = order.chain_id === 2368 ? 'https://testnet.kitescan.ai' : 'https://kitescan.ai';
-    return `${explorer}/tx/${order.tx_hash}`;
-  }, [order?.tx_hash, order?.chain_id]);
 
   useEffect(() => {
     if (params.orderId) {
@@ -67,7 +59,7 @@ export default function ProofPage() {
           <div className="hero-content">
             <p className="eyebrow">Chain Evidence</p>
             <h1>ClawJob Payment Proof</h1>
-            <p className="hero-text">Cross-check clawjob fields with payment parameters and transaction status on Kite Chain.</p>
+            <p className="hero-text">Cross-check clawjob fields with payment parameters and transaction status on Stellar.</p>
           </div>
         </section>
 
@@ -127,7 +119,7 @@ export default function ProofPage() {
                 <div>
                   <p className="meta-label">Amount</p>
                   <p className="detail-value">
-                    {order.amount_usdt} USDT ({order.amount_atomic} atomic)
+                    {order.amount_usdt} USDC ({order.amount_atomic} atomic)
                   </p>
                 </div>
                 <div>
@@ -135,8 +127,8 @@ export default function ProofPage() {
                   <p className="detail-value-code">{order.token_address}</p>
                 </div>
                 <div>
-                  <p className="meta-label">Chain ID</p>
-                  <p className="detail-value">{order.chain_id}</p>
+                  <p className="meta-label">Network</p>
+                  <p className="detail-value">{order.network}</p>
                 </div>
                 <div>
                   <p className="meta-label">Updated At</p>
@@ -144,13 +136,13 @@ export default function ProofPage() {
                 </div>
                 <div className="detail-span">
                   <p className="meta-label">Transaction Hash</p>
-                  <p className="detail-value-code">{order.tx_hash ?? 'Waiting for on-chain payment event'}</p>
+                  <p className="detail-value-code">{order.tx_hash ?? 'Waiting for on-chain payment'}</p>
                 </div>
-                {kiteScanTxUrl ? (
+                {order.tx_hash ? (
                   <div className="detail-span">
                     <div className="button-row">
-                      <a className="btn btn-secondary btn-sm" href={kiteScanTxUrl} target="_blank" rel="noreferrer">
-                        Open in KiteScan
+                      <a className="btn btn-secondary btn-sm" href={`https://stellar.expert/explorer/testnet/tx/${order.tx_hash}`} target="_blank" rel="noreferrer">
+                        Open in Stellar Expert
                       </a>
                     </div>
                   </div>
@@ -160,7 +152,7 @@ export default function ProofPage() {
 
             <section className="card">
               <p className="card-label">Settlement Parameters</p>
-              <h2 className="card-title">payForService Expected Values</h2>
+              <h2 className="card-title">x402 Payment Details</h2>
               {paymentPreparation ? (
                 <div className="order-detail-grid">
                   <div>
@@ -176,8 +168,8 @@ export default function ProofPage() {
                     <p className="detail-value-code">{paymentPreparation.listing_id_hex}</p>
                   </div>
                   <div>
-                    <p className="meta-label">Router</p>
-                    <p className="detail-value-code">{paymentPreparation.payment_router_address}</p>
+                    <p className="meta-label">Pay To</p>
+                    <p className="detail-value-code">{paymentPreparation.pay_to}</p>
                   </div>
                   <div>
                     <p className="meta-label">Token</p>
@@ -192,8 +184,16 @@ export default function ProofPage() {
                     <p className="detail-value-code">{paymentPreparation.supplier_wallet}</p>
                   </div>
                   <div>
-                    <p className="meta-label">Chain</p>
-                    <p className="detail-value">{paymentPreparation.chain_id}</p>
+                    <p className="meta-label">Network</p>
+                    <p className="detail-value">{paymentPreparation.network}</p>
+                  </div>
+                  <div>
+                    <p className="meta-label">Price</p>
+                    <p className="detail-value">{paymentPreparation.price}</p>
+                  </div>
+                  <div>
+                    <p className="meta-label">Facilitator</p>
+                    <p className="detail-value-code">{paymentPreparation.facilitator_url}</p>
                   </div>
                 </div>
               ) : (

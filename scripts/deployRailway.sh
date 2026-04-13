@@ -5,41 +5,39 @@ set -euo pipefail
 # Production Railway deployment for Coclaw.
 #
 # Architecture: 2 Railway services
-#   - api                  (Fastify + in-process chain listener + BullMQ worker)
-#   - agent                (Fastify, the "other agent" in A2A demo)
+#   - api                  (Fastify + in-process BullMQ worker)
+#   - agent                (Express + x402 paywall)
 #
 # Usage:
 #   ./scripts/deployRailway.sh               # deploy all services
 #   ./scripts/deployRailway.sh api           # deploy only api
-#   ./scripts/deployRailway.sh supplier      # deploy only agent
+#   ./scripts/deployRailway.sh agent         # deploy only agent
 #
 # Required env vars (set before running — script will NOT use placeholders):
 #   DATABASE_URL              Postgres connection string (Neon, Supabase, etc.)
 #   REDIS_URL                 Redis connection string (Upstash, Railway Redis, etc.)
 #   CALLBACK_HMAC_SECRET      Shared HMAC secret for signed callbacks
 #   OPENROUTER_API_KEY        OpenRouter key for the agent LLM
+#   STELLAR_PRIVATE_KEY       Stellar secret key (S...) for the supplier wallet
 #
-# Optional env vars (sensible on-chain defaults used if unset):
-#   USDT_ADDRESS              default: 0x0fF5393387ad2f9f691FD6Fd28e07E3969e27e63
-#   PAYMENT_ROUTER_ADDRESS    default: 0x6D92Ef5bF2858c158aAEf035447eEfDB55C0524C
-#   RPC_URL                   default: https://rpc-testnet.gokite.ai/
-#   CHAIN_ID                  default: 2368
+# Optional env vars:
+#   STELLAR_NETWORK           default: stellar:testnet
+#   FACILITATOR_URL           default: https://www.x402.org/facilitator
 #   OPENROUTER_MODEL          default: openai/gpt-4o-mini
 #   SUPPLIER_PORT             default: 3003
 #
 # One-time Railway dashboard setup per service (the config-file path):
 #   api                   -> railway.api.json
-#   agent                  -> railway.agent.json
+#   agent                 -> railway.agent.json
 # Set these under: Service -> Settings -> Build -> Config-as-code Path.
 #
 
 PROJECT_NAME="coclaw"
 
-# Default on-chain values (Kite testnet) — override via env if needed.
-: "${USDT_ADDRESS:=0x0fF5393387ad2f9f691FD6Fd28e07E3969e27e63}"
-: "${PAYMENT_ROUTER_ADDRESS:=0x6D92Ef5bF2858c158aAEf035447eEfDB55C0524C}"
-: "${RPC_URL:=https://rpc-testnet.gokite.ai/}"
-: "${CHAIN_ID:=2368}"
+: "${STELLAR_NETWORK:=stellar:testnet}"
+: "${STELLAR_RPC_URL:=https://soroban-testnet.stellar.org}"
+: "${STELLAR_USDC_CONTRACT:=CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA}"
+: "${FACILITATOR_URL:=https://www.x402.org/facilitator}"
 : "${OPENROUTER_MODEL:=openai/gpt-4o-mini}"
 : "${SUPPLIER_PORT:=3003}"
 : "${CALLBACK_BASE_URL:=http://coclawapi.railway.internal}"
@@ -79,7 +77,6 @@ setVars() {
   local service="$1"
   shift
   local pairs=("$@")
-  # railway variables --set accepts one --set per pair.
   local args=(--service "$service")
   for p in "${pairs[@]}"; do
     args+=(--set "$p")
@@ -91,29 +88,28 @@ deployApi() {
   requireVar DATABASE_URL
   requireVar REDIS_URL
   requireVar CALLBACK_HMAC_SECRET
+  requireVar STELLAR_PRIVATE_KEY
 
   echo ""
   echo "=== api (+ in-process worker) ==="
-  # Note: API_BASE_URL is intentionally NOT set here.
-  # The api passes http://127.0.0.1:${PORT} (the port Railway assigns) to the
-  # in-process worker at boot. Setting API_BASE_URL here would override that
-  # with a wrong port.
   setVars api \
     "NODE_ENV=production" \
     "DATABASE_URL=$DATABASE_URL" \
     "REDIS_URL=$REDIS_URL" \
     "CALLBACK_HMAC_SECRET=$CALLBACK_HMAC_SECRET" \
-    "USDT_ADDRESS=$USDT_ADDRESS" \
-    "PAYMENT_ROUTER_ADDRESS=$PAYMENT_ROUTER_ADDRESS" \
-    "RPC_URL=$RPC_URL" \
-    "CHAIN_ID=$CHAIN_ID" \
+    "STELLAR_NETWORK=$STELLAR_NETWORK" \
+    "STELLAR_RPC_URL=$STELLAR_RPC_URL" \
+    "STELLAR_USDC_CONTRACT=$STELLAR_USDC_CONTRACT" \
+    "STELLAR_PRIVATE_KEY=$STELLAR_PRIVATE_KEY" \
+    "FACILITATOR_URL=$FACILITATOR_URL" \
     "CALLBACK_BASE_URL=$CALLBACK_BASE_URL"
   railway up --service api --ci
 }
 
-deploySupplier() {
+deployAgent() {
   requireVar CALLBACK_HMAC_SECRET
   requireVar OPENROUTER_API_KEY
+  requireVar STELLAR_PRIVATE_KEY
 
   echo ""
   echo "=== agent ==="
@@ -122,6 +118,11 @@ deploySupplier() {
     "CALLBACK_HMAC_SECRET=$CALLBACK_HMAC_SECRET" \
     "OPENROUTER_API_KEY=$OPENROUTER_API_KEY" \
     "OPENROUTER_MODEL=$OPENROUTER_MODEL" \
+    "STELLAR_NETWORK=$STELLAR_NETWORK" \
+    "STELLAR_RPC_URL=$STELLAR_RPC_URL" \
+    "STELLAR_USDC_CONTRACT=$STELLAR_USDC_CONTRACT" \
+    "STELLAR_PRIVATE_KEY=$STELLAR_PRIVATE_KEY" \
+    "FACILITATOR_URL=$FACILITATOR_URL" \
     "SUPPLIER_PORT=$SUPPLIER_PORT"
   railway up --service agent --ci
 }
@@ -132,13 +133,13 @@ ensureLinked
 
 case "$TARGET" in
   api)       deployApi ;;
-  supplier)  deploySupplier ;;
+  agent)     deployAgent ;;
   all)
     deployApi
-    deploySupplier
+    deployAgent
     ;;
   *)
-    echo "error: unknown target '$TARGET' (use: api | supplier | all)" >&2
+    echo "error: unknown target '$TARGET' (use: api | agent | all)" >&2
     exit 1
     ;;
 esac
